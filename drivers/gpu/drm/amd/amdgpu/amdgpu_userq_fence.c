@@ -949,10 +949,12 @@ int amdgpu_userq_wait_ioctl(struct drm_device *dev, void *data,
 				r = dma_fence_wait(fences[i], true);
 				if (r) {
 					dma_fence_put(fences[i]);
+					fences[i] = NULL;
 					goto free_fences;
 				}
 
 				dma_fence_put(fences[i]);
+				fences[i] = NULL;
 				continue;
 			}
 
@@ -975,6 +977,7 @@ int amdgpu_userq_wait_ioctl(struct drm_device *dev, void *data,
 			fence_info[cnt].value = fences[i]->seqno;
 
 			dma_fence_put(fences[i]);
+			fences[i] = NULL;
 			/* Increment the actual userq fence count */
 			cnt++;
 		}
@@ -991,7 +994,8 @@ int amdgpu_userq_wait_ioctl(struct drm_device *dev, void *data,
 free_fences:
 	if (fences) {
 		while (num_fences-- > 0)
-			dma_fence_put(fences[num_fences]);
+			if (fences[num_fences])
+				dma_fence_put(fences[num_fences]);
 		kfree(fences);
 	}
 free_fence_info:
